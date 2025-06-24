@@ -29,6 +29,14 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
+    # Nouveau champ
+    ROLE_CHOICES = (
+        ("admin", "Administrateur"),
+        ("technicien", "Technicien"),
+        ("supérieur", "Supérieur"),
+    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="technicien")
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['nom', 'prenom']
 
@@ -36,6 +44,7 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.prenom} {self.nom} ({self.email})"
+
 
 # -------------------------
 # SOCIÉTÉ
@@ -69,7 +78,7 @@ class DescriptionType(models.Model):
 # RÔLES DANS LA SOCIÉTÉ
 # -------------------------
 class Role(models.Model):
-    nom = models.CharField(max_length=100)  # ex: "Responsable IT", "Utilisateur", "Autre"
+    nom = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nom
@@ -101,3 +110,17 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f"Ticket #{self.id} - {self.nom} {self.prenom} - {self.societe}"
+
+
+# -------------------------
+# RAPPORT DE CLÔTURE DE TICKET
+# -------------------------
+class Rapport(models.Model):
+    ticket = models.OneToOneField(Ticket, on_delete=models.CASCADE, related_name="rapport")
+    technicien = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True)
+    resume = models.TextField(help_text="Résumé de l'intervention")
+    actions_menees = models.TextField(help_text="Détails des actions techniques effectuées")
+    date_cloture = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Rapport Ticket #{self.ticket.id} - {self.technicien.prenom} {self.technicien.nom}"

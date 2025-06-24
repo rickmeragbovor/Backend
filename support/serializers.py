@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Societe, Prestation, DescriptionType, Role, Ticket
+from .models import Societe, Prestation, DescriptionType, Role, Ticket, Utilisateur
+
 
 class SocieteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,6 +23,14 @@ class RoleSerializer(serializers.ModelSerializer):
         fields = ['id', 'nom']
 
 class TicketSerializer(serializers.ModelSerializer):
+    prestation = serializers.CharField(source="prestation.nom", read_only=True)
     class Meta:
         model = Ticket
         fields = '__all__'
+
+class UtilisateurSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Utilisateur
+        fields = ['id', 'email', 'nom', 'prenom', 'role']
+
+

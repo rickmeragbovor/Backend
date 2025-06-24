@@ -41,11 +41,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'support',
+    'rest_framework_simplejwt',
 ]
 #AUTH_USER_MODEL
 AUTH_USER_MODEL = 'support.Utilisateur'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # 👈 doit venir très tôt
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -53,9 +55,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-
 ]
+
 
 ROOT_URLCONF = 'techexpert_api.urls'
 
@@ -91,6 +92,14 @@ DATABASES = {
     }
 }
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -144,4 +153,4 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'kossiviagbovor01@gmail.com'  # Ton adresse Gmail
 EMAIL_HOST_PASSWORD = 'bjis senb eaen bnba'  # Mot de passe d'application généré sur Google
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # Expéditeur affiché
+DEFAULT_FROM_EMAIL = 'techexpert@support.com' # Expéditeur affiché
