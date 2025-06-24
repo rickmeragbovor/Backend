@@ -87,6 +87,12 @@ class Role(models.Model):
 # TICKET DE SUPPORT CLIENT
 # -------------------------
 class Ticket(models.Model):
+    STATUT_CHOICES = [
+        ('En attente', 'En attente'),
+        ('En cours', 'En cours'),
+        ('En_attente_confirmation', 'En attente de confirmation'),
+        ('cloturé', 'Clôturé'),
+    ]
     # Informations du client
     nom = models.CharField(max_length=50)
     prenom = models.CharField(max_length=50)
@@ -105,8 +111,10 @@ class Ticket(models.Model):
 
     # Suivi
     date_creation = models.DateTimeField(auto_now_add=True)
-    statut = models.CharField(max_length=50, default="En attente")  # En attente, En cours, Résolu...
+    statut = models.CharField(max_length=50, choices=STATUT_CHOICES,default="En attente")  # En attente, En cours, Résolu...
     technicien = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, blank=True)
+
+    confirmation_token = models.UUIDField(null=True, blank=True, unique=True)
 
     def __str__(self):
         return f"Ticket #{self.id} - {self.nom} {self.prenom} - {self.societe}"

@@ -1,11 +1,19 @@
 import traceback
+import uuid
+import jwt
+from django.shortcuts import redirect
+
+from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
+from django.http import HttpResponse
+
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from .models import Societe, Prestation, DescriptionType, Role, Ticket, Utilisateur
 from .serializers import (
     SocieteSerializer,
@@ -42,12 +50,6 @@ class RoleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
     permission_classes = [AllowAny]
-
-# ✅ Gestion des tickets (authentification possible plus tard)
-class TicketViewSet(viewsets.ModelViewSet):
-    queryset = Ticket.objects.all()
-    serializer_class = TicketSerializer
-    permission_classes = [AllowAny]  # à adapter selon ton besoin plus tard
 
 # ✅ Création de ticket sans login
 class CreateTicketView(APIView):
@@ -107,3 +109,52 @@ class CreateTicketView(APIView):
 def get_me(request):
     serializer = UtilisateurSerializer(request.user)
     return Response(serializer.data)
+
+# ✅ Gestion des tickets
+class TicketViewSet(viewsets.ModelViewSet):
+    queryset = Ticket.objects.all()
+    serializer_class = TicketSerializer
+    permission_classes = [AllowAny]  # à adapter plus tard
+
+    @action(detail=True, methods=['patch'], url_path='demander-cloture')
+    def demander_cloture(self, request, pk=None):
+        ticket = self.get_object()
+
+        if ticket.statut == 'cloturé':
+            return Response({'error': 'Le ticket est déjà clôturé.'}, status=400)
+
+        token = uuid.uuid4()
+        ticket.confirmation_token = token
+        ticket.statut = 'En attente de confirmation'
+        ticket.save()
+
+        lien_confirmation = f"http://localhost:5173/confirm-cloture/{token}/"
+
+        send_mail(
+            subject="Confirmation de clôture du ticket",
+            message=f"Bonjour,\n\nCliquez ici pour confirmer la clôture du ticket : {lien_confirmation}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[ticket.email],
+            fail_silently=False,
+        )
+
+        return Response({'message': 'E-mail de confirmation envoyé.'})
+
+# ✅ Vue appelée via le lien de confirmation
+@api_view(['GET'])
+def confirmer_cloture(request, token):
+    try:
+        ticket = Ticket.objects.get(confirmation_token=token)
+
+        if ticket.statut != "En attente de confirmation":
+            return redirect("http://localhost:5173/confirmation?status=invalid")
+
+        ticket.statut = "cloturé"
+        ticket.date_cloture = timezone.now()
+        ticket.confirmation_token = None  # Invalider le token
+        ticket.save()
+
+        return redirect("http://localhost:5173/confirmation?status=success")
+
+    except Ticket.DoesNotExist:
+        return redirect("http://localhost:5173/confirmation?status=notfound")
