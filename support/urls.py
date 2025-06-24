@@ -1,5 +1,4 @@
 # dans ton_app/urls.py
-
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
@@ -22,6 +21,6 @@ router.register(r'tickets', TicketViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('create-ticket/', CreateTicketView.as_view(), name='create-ticket'),
-    path('api/confirm-cloture/<uuid:token>/', confirmer_cloture, name='confirm-cloture'),
-
+    path('api/confirm-cloture/<uuid:token>/', confirmer_cloture, name='confirmer_cloture'),
 ]
+

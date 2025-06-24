@@ -141,7 +141,14 @@ class TicketViewSet(viewsets.ModelViewSet):
         return Response({'message': 'E-mail de confirmation envoyé.'})
 
 # ✅ Vue appelée via le lien de confirmation
+from django.shortcuts import redirect
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from django.utils import timezone
+from .models import Ticket
+
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def confirmer_cloture(request, token):
     try:
         ticket = Ticket.objects.get(confirmation_token=token)
@@ -151,10 +158,13 @@ def confirmer_cloture(request, token):
 
         ticket.statut = "cloturé"
         ticket.date_cloture = timezone.now()
-        ticket.confirmation_token = None  # Invalider le token
+        ticket.confirmation_token = None
         ticket.save()
 
         return redirect("http://localhost:5173/confirmation?status=success")
 
     except Ticket.DoesNotExist:
         return redirect("http://localhost:5173/confirmation?status=notfound")
+
+    except Exception:
+        return redirect("http://localhost:5173/confirmation?status=error")
