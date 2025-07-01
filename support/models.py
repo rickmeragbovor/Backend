@@ -20,7 +20,7 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 # -------------------------
-# UTILISATEUR : uniquement les techniciens se connectent
+# UTILISATEUR
 # -------------------------
 class Utilisateur(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
@@ -29,7 +29,6 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
-    # Nouveau champ
     ROLE_CHOICES = (
         ("admin", "Administrateur"),
         ("technicien", "Technicien"),
@@ -45,7 +44,6 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.prenom} {self.nom} ({self.email})"
 
-
 # -------------------------
 # SOCIÉTÉ
 # -------------------------
@@ -56,7 +54,7 @@ class Societe(models.Model):
         return self.nom
 
 # -------------------------
-# PRESTATION : liée à une société
+# PRESTATION
 # -------------------------
 class Prestation(models.Model):
     societe = models.ForeignKey(Societe, on_delete=models.CASCADE, related_name="prestations")
@@ -69,7 +67,7 @@ class Prestation(models.Model):
 # TYPES DE DESCRIPTION DE PROBLÈME
 # -------------------------
 class DescriptionType(models.Model):
-    nom = models.CharField(max_length=100)  # ex: "Problème réseau", "Imprimante", "Autre"
+    nom = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nom
@@ -88,46 +86,78 @@ class Role(models.Model):
 # -------------------------
 class Ticket(models.Model):
     STATUT_CHOICES = [
-        ('En attente', 'En attente'),
-        ('En cours', 'En cours'),
-        ('En_attente_confirmation', 'En attente de confirmation'),
-        ('cloturé', 'Clôturé'),
+        ("en_attente", "En attente"),
+        ("en_cours", "En cours"),
+        ("en_attente_confirmation", "En attente de confirmation"),
+        ("cloture", "Clôturé"),
     ]
-    # Informations du client
+
     nom = models.CharField(max_length=50)
     prenom = models.CharField(max_length=50)
     email = models.EmailField()
     telephone = models.CharField(max_length=20)
 
-    # Informations liées à la société et prestation
     societe = models.ForeignKey(Societe, on_delete=models.SET_NULL, null=True)
     prestation = models.ForeignKey(Prestation, on_delete=models.SET_NULL, null=True)
-
-    # Description du problème
     description_type = models.ForeignKey(DescriptionType, on_delete=models.SET_NULL, null=True, blank=True)
-
-    # Poste ou rôle dans l'entreprise
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
 
-    # Suivi
     date_creation = models.DateTimeField(auto_now_add=True)
-    statut = models.CharField(max_length=50, choices=STATUT_CHOICES,default="En attente")  # En attente, En cours, Résolu...
+    statut = models.CharField(max_length=50, choices=STATUT_CHOICES, default="en_attente")
     technicien = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, blank=True)
 
     confirmation_token = models.UUIDField(null=True, blank=True, unique=True)
 
+    # Champs d’escalade
+    escalade_vers = models.ForeignKey(
+        Utilisateur,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tickets_escalades"
+    )
+    niveau_escalade = models.PositiveIntegerField(default=0)
+
+    def escalader(self, utilisateur, superieur, commentaire=""):
+        self.escalade_vers = superieur
+        self.niveau_escalade += 1
+        self.save()
+
+        EscaladeHistorique.objects.create(
+            ticket=self,
+            utilisateur=utilisateur,
+            superieur=superieur,
+            commentaire=commentaire,
+        )
+
     def __str__(self):
         return f"Ticket #{self.id} - {self.nom} {self.prenom} - {self.societe}"
 
+# -------------------------
+# HISTORIQUE D'ESCALADE
+# -------------------------
+class EscaladeHistorique(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="escalades")
+    utilisateur = models.ForeignKey(
+        Utilisateur, on_delete=models.SET_NULL, null=True, related_name="escalades_effectuees"
+    )
+    superieur = models.ForeignKey(
+        Utilisateur, on_delete=models.SET_NULL, null=True, related_name="escalades_recues"
+    )
+    commentaire = models.TextField(blank=True)
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.date:%Y-%m-%d %H:%M}] {self.utilisateur} → {self.superieur} (Ticket #{self.ticket.id})"
 
 # -------------------------
-# RAPPORT DE CLÔTURE DE TICKET
+# RAPPORT DE CLÔTURE
 # -------------------------
 class Rapport(models.Model):
     ticket = models.OneToOneField(Ticket, on_delete=models.CASCADE, related_name="rapport")
     technicien = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True)
-    resume = models.TextField(help_text="Résumé de l'intervention")
-    actions_menees = models.TextField(help_text="Détails des actions techniques effectuées")
+    resume = models.TextField()
+    actions_menees = models.TextField()
     date_cloture = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

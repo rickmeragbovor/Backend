@@ -1,13 +1,9 @@
 import traceback
 import uuid
-import jwt
-from django.shortcuts import redirect
-
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
-from django.http import HttpResponse
-
+from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -22,9 +18,13 @@ from .serializers import (
     RoleSerializer,
     TicketSerializer,
     UtilisateurSerializer,
+    EscaladeSerializer,
 )
 
-# ✅ Accessible sans authentification
+# ---------------------------
+# ViewSets accessibles sans authentification
+# ---------------------------
+
 class SocieteViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Societe.objects.all()
     serializer_class = SocieteSerializer
@@ -51,7 +51,10 @@ class RoleViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = RoleSerializer
     permission_classes = [AllowAny]
 
-# ✅ Création de ticket sans login
+# ---------------------------
+# Création de ticket sans authentification
+# ---------------------------
+
 class CreateTicketView(APIView):
     permission_classes = [AllowAny]
 
@@ -69,22 +72,9 @@ class CreateTicketView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        ticket_data = {
-            "nom": data["nom"],
-            "prenom": data["prenom"],
-            "email": data["email"],
-            "telephone": data["telephone"],
-            "role": data["role"],
-            "societe": data["societe"],
-            "prestation": data["prestation"],
-            "description_type": data["description_type"],
-            "description": data["description"]
-        }
-
-        ticket_serializer = TicketSerializer(data=ticket_data)
-
-        if ticket_serializer.is_valid():
-            ticket = ticket_serializer.save()
+        serializer = TicketSerializer(data=data)
+        if serializer.is_valid():
+            ticket = serializer.save()
             try:
                 send_mail(
                     subject="Confirmation de votre ticket",
@@ -93,78 +83,123 @@ class CreateTicketView(APIView):
                     recipient_list=[ticket.email],
                     fail_silently=False,
                 )
-                return Response({"message": "Ticket enregistré"}, status=status.HTTP_201_CREATED)
+                return Response({"message": "Ticket enregistré."}, status=status.HTTP_201_CREATED)
             except Exception as e:
                 print(f"Email sending failed: {str(e)}")
                 traceback.print_exc()
                 return Response({
-                    "message": "Ticket enregistré, mais l'email de confirmation n'a pas pu être envoyé"
+                    "message": "Ticket enregistré, mais l'e-mail de confirmation n'a pas pu être envoyé."
                 }, status=status.HTTP_201_CREATED)
 
-        return Response(ticket_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# ✅ Vue protégée — accessible uniquement après login
+# ---------------------------
+# Vue protégée — utilisateur connecté
+# ---------------------------
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_me(request):
     serializer = UtilisateurSerializer(request.user)
     return Response(serializer.data)
 
-# ✅ Gestion des tickets
+# ---------------------------
+# Gestion des tickets
+# ---------------------------
+
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
-    permission_classes = [AllowAny]  # à adapter plus tard
+    permission_classes = [AllowAny]  # À adapter selon les rôles
+
+    @action(detail=True, methods=["post"])
+    def escalader(self, request, pk=None):
+        ticket = self.get_object()
+        serializer = EscaladeSerializer(data=request.data, context={"request": request, "ticket": ticket})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"detail": "Ticket escaladé avec succès."}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'], url_path='demander-cloture')
     def demander_cloture(self, request, pk=None):
         ticket = self.get_object()
 
-        if ticket.statut == 'cloturé':
-            return Response({'error': 'Le ticket est déjà clôturé.'}, status=400)
+        if ticket.statut == 'cloture':
+            return Response({'error': 'Le ticket est déjà clôturé.'}, status=status.HTTP_400_BAD_REQUEST)
 
         token = uuid.uuid4()
         ticket.confirmation_token = token
-        ticket.statut = 'En attente de confirmation'
         ticket.save()
 
-        lien_confirmation = f"http://localhost:5173/confirm-cloture/{token}/"
+        lien_confirmation = f"http://localhost:8000/api/confirm-cloture/{token}/"
 
-        send_mail(
-            subject="Confirmation de clôture du ticket",
-            message=f"Bonjour,\n\nCliquez ici pour confirmer la clôture du ticket : {lien_confirmation}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[ticket.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                subject="Confirmation de clôture du ticket",
+                message=f"Bonjour,\n\nCliquez ici pour confirmer la clôture de votre ticket : {lien_confirmation}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[ticket.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            return Response({
+                'message': "Lien généré, mais l'envoi de l'e-mail a échoué.",
+                'error': str(e),
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return Response({'message': 'E-mail de confirmation envoyé.'})
+        return Response({'message': 'Lien de confirmation envoyé au client.'}, status=status.HTTP_200_OK)
 
-# ✅ Vue appelée via le lien de confirmation
-from django.shortcuts import redirect
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from django.utils import timezone
-from .models import Ticket
+# ---------------------------
+# Vue publique pour confirmer la clôture
+# ---------------------------
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def confirmer_cloture(request, token):
     try:
         ticket = Ticket.objects.get(confirmation_token=token)
+    except Ticket.DoesNotExist:
+        return render(request, "support/confirm_cloture.html", {
+            "title": "Ticket introuvable",
+            "message": "Le lien de confirmation est invalide ou a expiré.",
+        })
 
-        if ticket.statut != "En attente de confirmation":
-            return redirect("http://localhost:5173/confirmation?status=invalid")
-
-        ticket.statut = "cloturé"
+    try:
+        ticket.statut = "cloture"
         ticket.date_cloture = timezone.now()
         ticket.confirmation_token = None
         ticket.save()
 
-        return redirect("http://localhost:5173/confirmation?status=success")
+        return render(request, "support/confirm_cloture.html", {
+            "title": "Ticket clôturé",
+            "message": "Le ticket a été clôturé avec succès. Merci pour votre confirmation.",
+        })
 
-    except Ticket.DoesNotExist:
-        return redirect("http://localhost:5173/confirmation?status=notfound")
+    except Exception as e:
+        ticket.statut = "en_attente_confirmation"
+        ticket.save()
+        return render(request, "support/confirm_cloture.html", {
+            "title": "Erreur lors de la clôture",
+            "message": "Une erreur est survenue. Le ticket est maintenant en attente de confirmation.",
+        })
 
-    except Exception:
-        return redirect("http://localhost:5173/confirmation?status=error")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ticket_stats(request):
+    return Response({
+        "total_tickets": Ticket.objects.count(),
+        "tickets_en_cours": Ticket.objects.filter(statut="en_cours").count(),
+        "tickets_en_attente": Ticket.objects.filter(statut="en_attente").count(),
+        "tickets_clotures": Ticket.objects.filter(statut="cloture").count(),
+    })
+# ---------------------------
+# Liste des supérieurs
+# ---------------------------
+
+class SuperieurListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        superieurs = Utilisateur.objects.filter(role="supérieur")
+        serializer = UtilisateurSerializer(superieurs, many=True)
+        return Response(serializer.data)

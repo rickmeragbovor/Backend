@@ -8,7 +8,7 @@ from .views import (
     PrestationViewSet,
     DescriptionTypeViewSet,
     RoleViewSet,
-    TicketViewSet, CreateTicketView, confirmer_cloture,
+    TicketViewSet, CreateTicketView, confirmer_cloture, SuperieurListAPIView, ticket_stats,
 )
 
 router = DefaultRouter()
@@ -21,6 +21,8 @@ router.register(r'tickets', TicketViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('create-ticket/', CreateTicketView.as_view(), name='create-ticket'),
-    path('api/confirm-cloture/<uuid:token>/', confirmer_cloture, name='confirmer_cloture'),
+    path('confirm-cloture/<uuid:token>/', confirmer_cloture, name='confirmer_cloture'),
+    path('utilisateurs/', SuperieurListAPIView.as_view(), name='liste-superieurs'),
+    path('stats/',ticket_stats , name='stats'),
 ]
 
