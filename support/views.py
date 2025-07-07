@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Societe, Prestation, DescriptionType, Role, Ticket, Utilisateur
+from .permissions import IsAdminOrSuperior
 from .serializers import (
     SocieteSerializer,
     PrestationSerializer,
@@ -198,8 +199,23 @@ def ticket_stats(request):
 
 class SuperieurListAPIView(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
         superieurs = Utilisateur.objects.filter(role="supérieur")
         serializer = UtilisateurSerializer(superieurs, many=True)
+        return Response(serializer.data)
+
+
+
+class UtilisateurViewSet(viewsets.ModelViewSet):
+    queryset = Utilisateur.objects.all()
+    serializer_class = UtilisateurSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_context(self):
+        # Ajoute le contexte request au serializer (utile pour le hashing ou les vérifications)
+        return {'request': self.request}
+
+    @action(detail=False, methods=['get'], url_path='me')
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
         return Response(serializer.data)

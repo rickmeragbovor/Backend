@@ -22,10 +22,59 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = ['id', 'nom']
 
+from rest_framework import serializers
+from .models import Utilisateur  # ou ton modèle CustomUser
 class UtilisateurSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = Utilisateur
-        fields = ['id', 'email', 'nom', 'prenom', 'role']
+        fields = ['id', 'prenom', 'nom', 'email', 'password', 'role']
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        current_user = request.user if request else None
+
+        # Gestion du rôle (sécurité)
+        role_donne = validated_data.get('role', 'technicien')
+
+        if current_user and current_user.role in ['administrateur', 'superieur']:
+            # autorisé à créer tous les rôles
+            pass
+        else:
+            # si pas autorisé, on force à technicien
+            role_donne = 'technicien'
+
+        validated_data['role'] = role_donne
+
+        password = validated_data.pop('password')
+        user = Utilisateur(**validated_data)
+        user.set_password(password)  # Hash du mot de passe
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+
+        # Mise à jour des champs simples
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        # Mise à jour du mot de passe si fourni
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+        return instance
+
+    def to_representation(self, instance):
+        """ Personnalisation du retour (hide fields if needed) """
+        representation = super().to_representation(instance)
+        # On pourrait par exemple ne pas retourner le rôle à certains utilisateurs
+        return representation
 
 class TicketSerializer(serializers.ModelSerializer):
     # Champs en écriture : on attend un ID
