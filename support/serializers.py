@@ -1,6 +1,6 @@
+from .models import Societe, Prestation, DescriptionType, Role, Ticket, EscaladeHistorique
 from rest_framework import serializers
-from .models import Societe, Prestation, DescriptionType, Role, Ticket, Utilisateur, EscaladeHistorique
-
+from .models import Utilisateur
 
 class SocieteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,8 +22,7 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = ['id', 'nom']
 
-from rest_framework import serializers
-from .models import Utilisateur  # ou ton modèle CustomUser
+
 class UtilisateurSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
 
@@ -36,37 +35,44 @@ class UtilisateurSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request')
-        current_user = request.user if request else None
+        current_user = request.user if request and request.user.is_authenticated else None
 
-        # Gestion du rôle (sécurité)
         role_donne = validated_data.get('role', 'technicien')
+        print("Current user:", current_user)
+        print("Role demandé:", role_donne)
 
-        if current_user and current_user.role in ['administrateur', 'superieur']:
-            # autorisé à créer tous les rôles
-            pass
-        else:
-            # si pas autorisé, on force à technicien
+        if not current_user or current_user.role not in ['admin', 'supérieur']:
             role_donne = 'technicien'
 
         validated_data['role'] = role_donne
 
-        password = validated_data.pop('password')
+        password = validated_data.pop('password', None)
+        if not password:
+            raise serializers.ValidationError({"password": "Ce champ est obligatoire."})
+
         user = Utilisateur(**validated_data)
-        user.set_password(password)  # Hash du mot de passe
+        user.set_password(password)
         user.save()
         return user
 
     def update(self, instance, validated_data):
+        request = self.context.get('request')
+        current_user = request.user if request and request.user.is_authenticated else None
         password = validated_data.pop('password', None)
-
+        new_password = password.strip() if password else None
+        # 🔒 Gestion sécurisée du champ role
+        if 'role' in validated_data:
+            if not current_user or current_user.role not in ['admin', 'supérieur']:
+                validated_data.pop('role')
         # Mise à jour des champs simples
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-
-        # Mise à jour du mot de passe si fourni
-        if password:
-            instance.set_password(password)
-
+        # Gestion du mot de passe
+        if new_password:
+            if not instance.check_password(new_password):
+                instance.set_password(new_password)
+            else:
+                print("ℹ Le mot de passe est identique à l'existant, pas de mise à jour.")
         instance.save()
         return instance
 
@@ -75,6 +81,7 @@ class UtilisateurSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         # On pourrait par exemple ne pas retourner le rôle à certains utilisateurs
         return representation
+
 
 class TicketSerializer(serializers.ModelSerializer):
     # Champs en écriture : on attend un ID
@@ -132,3 +139,5 @@ class EscaladeSerializer(serializers.Serializer):
 
         ticket.escalader(utilisateur=utilisateur, superieur=superieur, commentaire=commentaire)
         return ticket
+
+

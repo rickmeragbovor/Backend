@@ -154,3 +154,13 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = 'kossiviagbovor01@gmail.com'  # Ton adresse Gmail
 EMAIL_HOST_PASSWORD = 'bjis senb eaen bnba'  # Mot de passe d'application généré sur Google
 DEFAULT_FROM_EMAIL = 'techexpert@support.com' # Expéditeur affiché
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),        # ⏱️ Durée du token d'accès (par défaut : 5 min)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),      # ⏳ Durée du token de rafraîchissement (par défaut : 1 jour)
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+}

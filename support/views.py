@@ -205,7 +205,6 @@ class SuperieurListAPIView(APIView):
         return Response(serializer.data)
 
 
-
 class UtilisateurViewSet(viewsets.ModelViewSet):
     queryset = Utilisateur.objects.all()
     serializer_class = UtilisateurSerializer
@@ -219,3 +218,6 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+
+
+
