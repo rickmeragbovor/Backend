@@ -87,7 +87,7 @@ class Role(models.Model):
 class Ticket(models.Model):
     STATUT_CHOICES = [
         ("en_attente", "En attente"),
-        ("en_cours", "En cours"),
+        ("escaladé", "Escaladé"),
         ("en_attente_confirmation", "En attente de confirmation"),
         ("cloture", "Clôturé"),
     ]
@@ -121,6 +121,8 @@ class Ticket(models.Model):
     def escalader(self, utilisateur, superieur, commentaire=""):
         self.escalade_vers = superieur
         self.niveau_escalade += 1
+        self.statut = "Escaladé"
+        self.technicien = utilisateur
         self.save()
 
         EscaladeHistorique.objects.create(

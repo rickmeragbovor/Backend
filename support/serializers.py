@@ -118,15 +118,18 @@ class TicketSerializer(serializers.ModelSerializer):
             'statut',
             'technicien',
         ]
-
 class EscaladeSerializer(serializers.Serializer):
-    superieur_id = serializers.PrimaryKeyRelatedField(queryset=Utilisateur.objects.filter(role="supérieur"))
-    commentaire = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    superieur_id = serializers.PrimaryKeyRelatedField(
+        queryset=Utilisateur.objects.filter(role="supérieur"),
+        source="superieur"  # mappe vers un objet Utilisateur
+    )
+    commentaire = serializers.CharField(
+        required=False, allow_blank=True, max_length=500
+    )
 
     def validate(self, attrs):
         ticket = self.context['ticket']
-        superieur = attrs['superieur_id']
-
+        superieur = attrs['superieur']
         if ticket.escalade_vers == superieur:
             raise serializers.ValidationError("Le ticket est déjà escaladé vers ce supérieur.")
         return attrs
@@ -134,10 +137,7 @@ class EscaladeSerializer(serializers.Serializer):
     def save(self):
         ticket = self.context['ticket']
         utilisateur = self.context['request'].user
-        superieur = self.validated_data['superieur_id']
+        superieur = self.validated_data['superieur']
         commentaire = self.validated_data.get('commentaire', '')
-
         ticket.escalader(utilisateur=utilisateur, superieur=superieur, commentaire=commentaire)
         return ticket
-
-

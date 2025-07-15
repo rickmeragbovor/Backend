@@ -109,10 +109,15 @@ def get_me(request):
 # ---------------------------
 
 class TicketViewSet(viewsets.ModelViewSet):
-    queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
     permission_classes = [AllowAny]  # À adapter selon les rôles
-
+    def get_queryset(self):
+        user = self.request.user
+        # Cas 1 : si l'utilisateur est un technicien => voir seulement les tickets non escaladés (niveau = 0)
+        if user.role == 'technicien':
+            return Ticket.objects.filter(niveau_escalade=0)
+        # Cas 2 : autres rôles (admin, supérieur...) => voir tous les tickets
+        return Ticket.objects.all()
     @action(detail=True, methods=["post"])
     def escalader(self, request, pk=None):
         ticket = self.get_object()
@@ -218,6 +223,3 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
-
-
-

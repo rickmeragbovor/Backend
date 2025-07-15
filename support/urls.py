@@ -15,7 +15,7 @@ router.register(r'societes', SocieteViewSet)
 router.register(r'prestations', PrestationViewSet)
 router.register(r'description-types', DescriptionTypeViewSet)
 router.register(r'roles', RoleViewSet)
-router.register(r'tickets', TicketViewSet)
+router.register(r'tickets', TicketViewSet,basename='ticket')
 router.register(r'utilisateurs', UtilisateurViewSet, basename='utilisateur')
 
 urlpatterns = [
@@ -25,4 +25,3 @@ urlpatterns = [
     path('superieurs/', SuperieurListAPIView.as_view(), name='liste-superieurs'),
     path('stats/',ticket_stats , name='stats'),
 ]
-
