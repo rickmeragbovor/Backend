@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,8 +25,7 @@ SECRET_KEY = 'django-insecure-q^n6lrl#gc&)d5c&5ztwkwx239f$6_o6y3k01zhd80idku5+&z
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
- ]
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -39,15 +38,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'corsheaders',
     'support',
+    'drf_yasg',
     'rest_framework_simplejwt',
+    'corsheaders',
+
 ]
 #AUTH_USER_MODEL
 AUTH_USER_MODEL = 'support.Utilisateur'
 
+
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # 👈 doit venir très tôt
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -84,10 +86,10 @@ WSGI_APPLICATION = 'techexpert_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'techexpert_api',
-        'USER': 'techexpert_user',
-        'PASSWORD': '1999',
-        'HOST': 'localhost',   # ou '127.0.0.1'
+        'NAME': 'ticketsys',
+        'USER': 'techtk',
+        'PASSWORD': '1974',
+        'HOST': 'localhost',
         'PORT': '5432',
     }
 }
@@ -141,20 +143,22 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # si Vite
-]
 
-# settings.py
-# Email settings pour l'envoi de mails via Gmail
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# Configuration SMTP pour Gmail
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'kossiviagbovor01@gmail.com'  # Ton adresse Gmail
-EMAIL_HOST_PASSWORD = 'bjis senb eaen bnba'  # Mot de passe d'application généré sur Google
-DEFAULT_FROM_EMAIL = 'techexpert@support.com' # Expéditeur affiché
-from datetime import timedelta
+EMAIL_USE_TLS = True
+
+# Compte Gmail utilisé pour l'envoi (ne sera pas affiché à l'utilisateur)
+EMAIL_HOST_USER = 'kossiviagbovor01@gmail.com'
+EMAIL_HOST_PASSWORD = 'bjis senb eaen bnba'  # Mot de passe d'application Gmail
+
+# Expéditeur affiché dans les mails reçus
+DEFAULT_FROM_EMAIL = 'TECHEXPERT SARL SUPPORT <techexpert@support.com>'
+
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),        # ⏱️ Durée du token d'accès (par défaut : 5 min)
@@ -164,3 +168,17 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': "JWT Authorization header using Bearer. Example: **Bearer &lt;token&gt;**"
+        }
+    },
+    'USE_SESSION_AUTH': False,
+}
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True

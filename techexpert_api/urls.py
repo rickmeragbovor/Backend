@@ -1,5 +1,5 @@
 """
-URL configuration for techexpert_api project.
+URL configuration for support_api project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -16,18 +16,47 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+from rest_framework import permissions
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
 
-from support.views import get_me
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Support API",
+        default_version='v1',
+        description="Documentation de l'API de support de tickets",
+        contact=openapi.Contact(email="support@example.com"),
+    ),
+    public=True,
+    permission_classes=[permissions.AllowAny],
+    authentication_classes=[JWTAuthentication],
+)
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # === Auth ===
+    path('auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # === App ===
     path('api/', include('support.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/me/', get_me),
+
+    # Swagger / Redoc
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
 
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -5,11 +5,30 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c07ea700-4eff-4dfb-a62b-4388bb73d18a" name="Changes" comment="first commit">
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/project.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/project.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/support/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0001_initial.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0002_utilisateur_role.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0003_rapport.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0004_alter_utilisateur_role.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0005_alter_ticket_statut.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0006_ticket_confirmation_token.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0007_alter_ticket_statut.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0008_alter_ticket_statut.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0009_escaladehistorique.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0010_alter_escaladehistorique_superieur.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0011_ticket_escalade_vers_ticket_niveau_escalade_and_more.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/migrations/0012_alter_ticket_statut.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/support/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/support/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/permissions.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/support/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/support/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/support/templates/support/confirm_cloture.html" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/support/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/support/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/support/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/support/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/techexpert_api/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/techexpert_api/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/techexpert_api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/techexpert_api/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/techexpert_api/wsgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/techexpert_api/wsgi.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,7 +65,7 @@
   }
 }</component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="DEPENDENCY_CHECKER_PROBLEMS_TAB" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
@@ -70,7 +89,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-598b0484d0b5-e2d783800521-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-251.26927.74" />
+        <option value="bundled-python-sdk-4c141bd692a7-e2d783800521-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-251.26927.90" />
       </set>
     </attachedChunks>
   </component>
